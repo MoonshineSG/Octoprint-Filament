@@ -15,9 +15,9 @@ An API is available to check the filament sensor status via a GET method to `/pl
 - `{status: "0"}` if the sensor is OFF (filament not present)
 - `{status: "1"}` if the sensor is ON (filament present)
 
-The status 0/1 might depends on the type of sensor, and it might be reverse if using a normaly closed switch.
+The status 0/1 depends on the type of sensor, and it might be reverse if using a normaly closed switch.
 
-An build using an optical switch is available at http://www.thingiverse.com/thing:1646220
+A build using an optical switch can be found at http://www.thingiverse.com/thing:1646220
 
-
-Note: Needs RPi.GPIO version greater than 0.6.0 to allow access to GPIO for non root and chmod a+rw /dev/gpiomem
+Note: Needs RPi.GPIO version greater than 0.6.0 to allow access to GPIO for non root and `chmod a+rw /dev/gpiomem`.
+This requires a failry up to date system.
