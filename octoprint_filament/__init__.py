@@ -45,7 +45,7 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 
 	@octoprint.plugin.BlueprintPlugin.route("/status", methods=["GET"])
 	def check_status(self):
-		return jsonify( status = "true" if GPIO.input(self.PIN_FILAMENT) else "false") )
+		return jsonify( status = "true" if GPIO.input(self.PIN_FILAMENT) else "false" )
 		
 	def on_event(self, event, payload):
 		if event == Events.PRINT_STARTED:
