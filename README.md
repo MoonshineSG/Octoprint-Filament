@@ -1,8 +1,9 @@
 Pause print on GPIO filament runout sensor
 
-The following needs to be added to the config.yaml:
+The following needs to be added to the config.yaml in the plugins section:
 
 ```
+plugins:
   filament:
     pin: XX
     bounce: 400
