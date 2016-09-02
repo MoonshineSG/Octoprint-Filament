@@ -7,7 +7,8 @@ The following needs to be added to the config.yaml:
     pin: XX
     bounce: 400
 ```
-where XX represent the GPIO pin where your sensor is connected.
+where XX represent the GPIO pin where your sensor is connected. Use `GPIO.BCM` notation. See [this](http://raspberrypi.stackexchange.com/questions/12966/what-is-the-difference-between-board-and-bcm-for-gpio-pin-numbering) good explation of GPIO.BOARD vs GPIO.BCM.
+
 
 An API is available to check the filament sensor status via a GET method to `/plugin/filament/status` which returns a JSON
 
