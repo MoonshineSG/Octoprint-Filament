@@ -17,6 +17,9 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 							octoprint.plugin.EventHandlerPlugin,
 							octoprint.plugin.BlueprintPlugin):
 
+	CLOSED = 1
+	OPEN = 0
+	
 	def initialize(self):
 		self._logger.setLevel(logging.DEBUG)
 		
@@ -32,48 +35,66 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 	def on_after_startup(self):
 		self.PIN_FILAMENT = self._settings.get(["pin"])
 		self.BOUNCE = self._settings.get_int(["bounce"])
+		self.FILAMENT = self._settings.get(["filament"])
 		
+		if self.FILAMENT not in [self.CLOSED, self.OPEN]:
+			raise Exception("Invalid value for switch type.")
+
 		if self.PIN_FILAMENT != -1:
-			self._logger.info("Filament Sensor Plugin setup on GPIO [%s]..."%self.PIN_FILAMENT)
 			GPIO.setup(self.PIN_FILAMENT, GPIO.IN)
-		
+			self._logger.info("Filament Sensor Plugin setup indicates '%s' when filament is present (setup on GPIO %s)."%(self.FILAMENT, self.PIN_FILAMENT))
+			self._logger.info("Current status is '%s'..."%GPIO.input(self.PIN_FILAMENT))
+			#self.setup_detection()
+		else:
+			self._logger.error("Filament Sensor Plugin not fully setup. Check your settings. [PIN_FILAMENT = -1]")
+			
+			
 	def get_settings_defaults(self):
 		return dict(
 			pin = -1,
-			bounce = 300
+			bounce = 300,
+			filament = self.OPEN
 		)
 
 	@octoprint.plugin.BlueprintPlugin.route("/status", methods=["GET"])
 	def check_status(self):
-		status = "-1"
+		status = -1
 		if self.PIN_FILAMENT != -1:
-			status = "1" if GPIO.input(self.PIN_FILAMENT) else "0"
+				status = int(self.FILAMENT == self.CLOSED) if GPIO.input(self.PIN_FILAMENT) else int(self.FILAMENT != self.CLOSED)
 		return jsonify( status = status )
 		
 	def on_event(self, event, payload):
 		if event == Events.PRINT_STARTED:
 			self._logger.info("Printing started. Filament sensor enabled.")
-			self.setup_gpio()
+			self.setup_detection()
 		elif event in (Events.PRINT_DONE, Events.PRINT_FAILED, Events.PRINT_CANCELLED):
-			self._logger.info("Printing stopped. Filament sensor disbaled.")
+			self._logger.info("Printing stopped. Filament sensor disabled.")
 			try:
 				GPIO.remove_event_detect(self.PIN_FILAMENT)
 			except:
 				pass
 
-	def setup_gpio(self):
+	def setup_detection(self):
 		try:
 			GPIO.remove_event_detect(self.PIN_FILAMENT)
 		except:
 			pass
 		if self.PIN_FILAMENT != -1:
-			GPIO.add_event_detect(self.PIN_FILAMENT, GPIO.FALLING, callback=self.check_gpio, bouncetime=self.BOUNCE) 
+			if self.FILAMENT == self.OPEN:
+				self._logger.debug("Filament sensor setup for 'RISING' detection...")
+				DIRECTION = GPIO.RISING
+			else:
+				self._logger.debug("Filament sensor setup for 'FALLING' detection...")
+				DIRECTION = GPIO.FALLING
+
+			GPIO.add_event_detect(self.PIN_FILAMENT, DIRECTION, callback=self.check_gpio, bouncetime=self.BOUNCE) 
 
 	def check_gpio(self, channel):
-		state = GPIO.input(self.PIN_FILAMENT)
-		self._logger.debug("Detected sensor [%s] state [%s]? !"%(channel, state))
-		if not state: #safety pin ?
-			self._logger.debug("Sensor [%s]!"%state)
+		read = GPIO.input(self.PIN_FILAMENT)
+		state = int(self.FILAMENT == self.CLOSED) ^ read
+		self._logger.debug("Event on sensor. Runout ? [%s] (actual reading :[%s])."%(state, read))
+		if state: #safety pin
+			self._logger.info("Filament runout. Pause printing.")
 			if self._printer.is_printing():
 				self._printer.toggle_pause_print()
 
