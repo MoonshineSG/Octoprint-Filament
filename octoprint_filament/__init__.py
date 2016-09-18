@@ -11,6 +11,7 @@ from flask import jsonify, request
 import logging
 import logging.handlers
 import RPi.GPIO as GPIO 
+from time import sleep
 
 class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 							octoprint.plugin.SettingsPlugin,
@@ -90,6 +91,7 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 			GPIO.add_event_detect(self.PIN_FILAMENT, DIRECTION, callback=self.check_gpio, bouncetime=self.BOUNCE) 
 
 	def check_gpio(self, channel):
+		sleep(0.5) #walk around for detecting fake spikes. if after 0.5 sec the reading is still correct, it should be real 
 		read = GPIO.input(self.PIN_FILAMENT)
 		state = int(self.FILAMENT == self.CLOSED) ^ read
 		self._logger.debug("Event on sensor. Runout ? [%s] (actual reading :[%s])."%(state, read))
@@ -117,10 +119,6 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 				pip="https://github.com/MoonshineSG/OctoPrint-Filament/archive/{target_version}.zip"
 			)
 		)
-
-__plugin_name__ = "Filament Sensor"
-__plugin_version__ = "1.0.1"
-__plugin_description__ = "Use a filament sensor to pause printing when filament runs out."
 
 def __plugin_load__():
 	global __plugin_implementation__
