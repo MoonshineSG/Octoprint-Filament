@@ -8,9 +8,10 @@ plugins:
     pin: XX
 	filament: 0
     bounce: 400	
+	pause: 1
 ```
-where XX represent the GPIO pin where your sensor is connected. Use `GPIO.BCM` notation. See [this](http://raspberrypi.stackexchange.com/questions/12966/what-is-the-difference-between-board-and-bcm-for-gpio-pin-numbering) good explation of GPIO.BOARD vs GPIO.BCM.
 
+where XX represent the GPIO pin where your sensor is connected. Use `GPIO.BCM` notation. See [this](http://raspberrypi.stackexchange.com/questions/12966/what-is-the-difference-between-board-and-bcm-for-gpio-pin-numbering) good explation of GPIO.BOARD vs GPIO.BCM.
 
 An API is available to check the filament sensor status via a GET method to `/plugin/filament/status` which returns a JSON
 
@@ -20,7 +21,9 @@ An API is available to check the filament sensor status via a GET method to `/pl
 
 The status 0/1 depends on the type of sensor. The setting `filament` determines the type of sensor (normaly open or normaly closed). Set to the value read from the GPIO when the **filament is present**.
 
-The print will **pause** when the GPIO value changes to the opposite of `filament` (raise or fall) 
+Thge `pause` settings allow to switch on or off (values 1 or 0) the **pause** of the print when the GPIO value changes to the opposite of `filament` (raise or fall)
+
+An `Events.FILAMENT_RUNOUT` or `Events.FILAMENT_LOADED` would be triggered when the status changes and other plugins can action of it. See [documentation](http://docs.octoprint.org/en/devel/events/index.html) regarding the OctoPrint events. The FILAMENT events are injected at runtime and not mentioned in the original documentation.  
 
 The setting `bounce` represent the sensitivity of your switch. The higher the number the less sensitive. Small numbers might give fake reads and cause **unwanted results**.
 

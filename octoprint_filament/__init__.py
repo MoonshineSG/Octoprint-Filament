@@ -37,6 +37,7 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 		self.PIN_FILAMENT = self._settings.get(["pin"])
 		self.BOUNCE = self._settings.get_int(["bounce"])
 		self.FILAMENT = self._settings.get(["filament"])
+		self.PAUSE = self._settings.get(["pause"])
 		
 		if self.FILAMENT not in [self.CLOSED, self.OPEN]:
 			raise Exception("Invalid value for switch type.")
@@ -45,16 +46,15 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 			GPIO.setup(self.PIN_FILAMENT, GPIO.IN)
 			self._logger.info("Filament Sensor Plugin setup indicates '%s' when filament is present (setup on GPIO %s)."%(self.FILAMENT, self.PIN_FILAMENT))
 			self._logger.info("Current status is '%s'..."%GPIO.input(self.PIN_FILAMENT))
-			#self.setup_detection()
 		else:
 			self._logger.error("Filament Sensor Plugin not fully setup. Check your settings. [PIN_FILAMENT = -1]")
-			
 			
 	def get_settings_defaults(self):
 		return dict(
 			pin = -1,
 			bounce = 300,
-			filament = self.OPEN
+			filament = self.OPEN,
+			pause = 1
 		)
 
 	@octoprint.plugin.BlueprintPlugin.route("/status", methods=["GET"])
@@ -82,23 +82,32 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 			pass
 		if self.PIN_FILAMENT != -1:
 			if self.FILAMENT == self.OPEN:
-				self._logger.debug("Filament sensor setup for 'RISING' detection...")
-				DIRECTION = GPIO.RISING
+				GPIO.add_event_detect(self.PIN_FILAMENT, GPIO.RISING, callback=self.filament_runout, bouncetime=self.BOUNCE) 
+				GPIO.add_event_detect(self.PIN_FILAMENT, GPIO.FALLING, callback=self.filament_loaded, bouncetime=self.BOUNCE) 
 			else:
-				self._logger.debug("Filament sensor setup for 'FALLING' detection...")
-				DIRECTION = GPIO.FALLING
+				GPIO.add_event_detect(self.PIN_FILAMENT, GPIO.FALLING, callback=self.filament_runout, bouncetime=self.BOUNCE)
+				GPIO.add_event_detect(self.PIN_FILAMENT, GPIO.RISING, callback=self.filament_loaded, bouncetime=self.BOUNCE) 
 
-			GPIO.add_event_detect(self.PIN_FILAMENT, DIRECTION, callback=self.check_gpio, bouncetime=self.BOUNCE) 
-
-	def check_gpio(self, channel):
+	def filament_runout(self):
 		sleep(0.5) #walk around for detecting fake spikes. if after 0.5 sec the reading is still correct, it should be real 
 		read = GPIO.input(self.PIN_FILAMENT)
 		state = int(self.FILAMENT == self.CLOSED) ^ read
-		self._logger.debug("Event on sensor. Runout ? [%s] (actual reading :[%s])."%(state, read))
+		self._logger.debug("GPIO event on filament sensor. State is '%s' (actual reading is '%s')."%(state, read))
 		if state: #safety pin
-			self._logger.info("Filament runout. Pause printing.")
-			if self._printer.is_printing():
+			self._logger.debug("Filament runout. Fire 'FILAMENT_RUNOUT' event.")
+			eventManager().fire(Events.FILAMENT_RUNOUT)
+			if self._printer.is_printing() and self.PAUSE:
 				self._printer.toggle_pause_print()
+
+	def filament_loaded(self):
+		sleep(0.5) #walk around for detecting fake spikes. if after 0.5 sec the reading is still correct, it should be real 
+		read = GPIO.input(self.PIN_FILAMENT)
+		state = int(self.FILAMENT != self.CLOSED) ^ read
+		self._logger.debug("GPIO event on filament sensor. State is '%s' (actual reading is '%s')."%(state, read))
+		if state: #safety pin
+			self._logger.debug("Filament loaded. Fire 'FILAMENT_LOADED' event.")
+			eventManager().fire(Events.FILAMENT_LOADED)
+
 
 	def get_version(self):
 		return self._plugin_version
@@ -121,6 +130,10 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 		)
 
 def __plugin_load__():
+	#patch Events with our own declaration
+	Events.FILAMENT_RUNOUT = "FilamentRunout"
+	Events.FILAMENT_LOADED = "FilamentLoaded"
+
 	global __plugin_implementation__
 	__plugin_implementation__ = FilamentSensorPlugin()
 
