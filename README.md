@@ -23,7 +23,7 @@ The status 0/1 depends on the type of sensor. The setting `filament` determines 
 
 Thge `pause` settings allow to switch on or off (values 1 or 0) the **pause** of the print when the GPIO value changes to the opposite of `filament` (raise or fall)
 
-An `Events.FILAMENT_RUNOUT` or `Events.FILAMENT_LOADED` would be triggered when the status changes and other plugins can action of it. See [documentation](http://docs.octoprint.org/en/devel/events/index.html) regarding the OctoPrint events. The FILAMENT events are injected at runtime and not mentioned in the original documentation.  
+An `Events.FILAMENT_RUNOUT` or `Events.FILAMENT_LOADED` would be triggered when the status changes and other plugins can action of it. See [documentation](http://docs.octoprint.org/en/devel/plugins/mixins.html#eventhandlerplugin) regarding the OctoPrint events. The FILAMENT events are injected at runtime and not mentioned in the original documentation.  
 
 The setting `bounce` represent the sensitivity of your switch. The higher the number the less sensitive. Small numbers might give fake reads and cause **unwanted results**.
 
