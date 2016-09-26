@@ -48,7 +48,7 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 			self._logger.info("Current status is '%s'..."%GPIO.input(self.PIN_FILAMENT))
 		else:
 			self._logger.error("Filament Sensor Plugin not fully setup. Check your settings. [PIN_FILAMENT = -1]")
-			
+		
 	def get_settings_defaults(self):
 		return dict(
 			pin = -1,
@@ -81,29 +81,29 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 		except:
 			pass
 		if self.PIN_FILAMENT != -1:
-			if self.FILAMENT == self.OPEN:
-				GPIO.add_event_detect(self.PIN_FILAMENT, GPIO.RISING, callback=self.filament_runout, bouncetime=self.BOUNCE) 
-				GPIO.add_event_detect(self.PIN_FILAMENT, GPIO.FALLING, callback=self.filament_loaded, bouncetime=self.BOUNCE) 
-			else:
-				GPIO.add_event_detect(self.PIN_FILAMENT, GPIO.FALLING, callback=self.filament_runout, bouncetime=self.BOUNCE)
-				GPIO.add_event_detect(self.PIN_FILAMENT, GPIO.RISING, callback=self.filament_loaded, bouncetime=self.BOUNCE) 
+			GPIO.add_event_detect(self.PIN_FILAMENT, GPIO.BOTH, callback=self.filament_detection, bouncetime=self.BOUNCE) 
 
-	def filament_runout(self):
-		sleep(0.5) #walk around for detecting fake spikes. if after 0.5 sec the reading is still correct, it should be real 
+	def filament_detection(self, channel):
+		sleep(0.5) #ugly walk around for detecting fake spikes.
 		read = GPIO.input(self.PIN_FILAMENT)
+		self._logger.debug("GPIO event on filament sensor. Read is '%s'."%read)
+		if read == self.FILAMENT:
+				self.filament_loaded(read)
+		else:
+				self.filament_runout(read)
+
+	def filament_runout(self, read):
 		state = int(self.FILAMENT == self.CLOSED) ^ read
-		self._logger.debug("GPIO event on filament sensor. State is '%s' (actual reading is '%s')."%(state, read))
+		self._logger.debug("GPIO event on filament sensor. State is '%s'."%state)
 		if state: #safety pin
 			self._logger.debug("Filament runout. Fire 'FILAMENT_RUNOUT' event.")
 			eventManager().fire(Events.FILAMENT_RUNOUT)
 			if self._printer.is_printing() and self.PAUSE:
 				self._printer.toggle_pause_print()
 
-	def filament_loaded(self):
-		sleep(0.5) #walk around for detecting fake spikes. if after 0.5 sec the reading is still correct, it should be real 
-		read = GPIO.input(self.PIN_FILAMENT)
+	def filament_loaded(self, read):
 		state = int(self.FILAMENT != self.CLOSED) ^ read
-		self._logger.debug("GPIO event on filament sensor. State is '%s' (actual reading is '%s')."%(state, read))
+		self._logger.debug("GPIO event on filament sensor. State is '%s'."%state)
 		if state: #safety pin
 			self._logger.debug("Filament loaded. Fire 'FILAMENT_LOADED' event.")
 			eventManager().fire(Events.FILAMENT_LOADED)
@@ -136,4 +136,3 @@ def __plugin_load__():
 
 	global __plugin_implementation__
 	__plugin_implementation__ = FilamentSensorPlugin()
-
