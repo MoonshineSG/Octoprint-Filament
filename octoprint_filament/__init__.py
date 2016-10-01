@@ -46,6 +46,7 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 			GPIO.setup(self.PIN_FILAMENT, GPIO.IN)
 			self._logger.info("Filament Sensor Plugin setup indicates '%s' when filament is present (setup on GPIO %s)."%(self.FILAMENT, self.PIN_FILAMENT))
 			self._logger.info("Current status is '%s'..."%GPIO.input(self.PIN_FILAMENT))
+			GPIO.add_event_detect(self.PIN_FILAMENT, GPIO.BOTH, callback=self.filament_detection, bouncetime=self.BOUNCE) 
 		else:
 			self._logger.error("Filament Sensor Plugin not fully setup. Check your settings. [PIN_FILAMENT = -1]")
 		
@@ -64,25 +65,6 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 				status = int(self.FILAMENT == self.CLOSED) if GPIO.input(self.PIN_FILAMENT) else int(self.FILAMENT != self.CLOSED)
 		return jsonify( status = status )
 		
-	def on_event(self, event, payload):
-		if event == Events.PRINT_STARTED:
-			self._logger.info("Printing started. Filament sensor enabled.")
-			self.setup_detection()
-		elif event in (Events.PRINT_DONE, Events.PRINT_FAILED, Events.PRINT_CANCELLED):
-			self._logger.info("Printing stopped. Filament sensor disabled.")
-			try:
-				GPIO.remove_event_detect(self.PIN_FILAMENT)
-			except:
-				pass
-
-	def setup_detection(self):
-		try:
-			GPIO.remove_event_detect(self.PIN_FILAMENT)
-		except:
-			pass
-		if self.PIN_FILAMENT != -1:
-			GPIO.add_event_detect(self.PIN_FILAMENT, GPIO.BOTH, callback=self.filament_detection, bouncetime=self.BOUNCE) 
-
 	def filament_detection(self, channel):
 		sleep(0.5) #ugly walk around for detecting fake spikes.
 		read = GPIO.input(self.PIN_FILAMENT)
