@@ -37,8 +37,9 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 		self.PIN_FILAMENT = self._settings.get(["pin"])
 		self.BOUNCE = self._settings.get_int(["bounce"])
 		self.FILAMENT = self._settings.get(["filament"])
-		self.PAUSE = self._settings.get(["pause"])
-		
+		self.GCODE_LOADED = self._settings.get(["gcode_loaded"])
+		self.GCODE_RUNOUT = self._settings.get(["gcode_runout"])
+			
 		if self.FILAMENT not in [self.CLOSED, self.OPEN]:
 			raise Exception("Invalid value for switch type.")
 
@@ -55,7 +56,8 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 			pin = -1,
 			bounce = 300,
 			filament = self.OPEN,
-			pause = 1
+			gcode_runout = "M0",
+			gcode_loaded = None
 		)
 
 	@octoprint.plugin.BlueprintPlugin.route("/status", methods=["GET"])
@@ -80,8 +82,8 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 		if state: #safety pin
 			self._logger.debug("Filament runout. Fire 'FILAMENT_RUNOUT' event.")
 			eventManager().fire(Events.FILAMENT_RUNOUT)
-			if self._printer.is_printing() and self.PAUSE:
-				self._printer.toggle_pause_print()
+			if self._printer.is_printing() and self.GCODE_RUNOUT:
+				self._printer.commands(self.GCODE_RUNOUT).split(",")
 
 	def filament_loaded(self, read):
 		state = int(self.FILAMENT != self.CLOSED) ^ read
@@ -89,7 +91,8 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 		if state: #safety pin
 			self._logger.debug("Filament loaded. Fire 'FILAMENT_LOADED' event.")
 			eventManager().fire(Events.FILAMENT_LOADED)
-
+			if self.GCODE_LOADED:
+				self._printer.commands(self.GCODE_LOADED).split(",")
 
 	def get_version(self):
 		return self._plugin_version
