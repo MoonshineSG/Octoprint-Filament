@@ -26,6 +26,7 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 			
 		GPIO.setmode(GPIO.BCM)
 		GPIO.setwarnings(False)
+		self.we_paused = False
 		
 		self._logger.info("Filament Sensor Plugin [%s] initialized..."%self._identifier)
 
@@ -60,6 +61,8 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 				GPIO.remove_event_detect(self.PIN_FILAMENT)
 			except:
 				pass
+		elif event == Events.PRINT_RESUMED:
+			self.we_paused = False
 
 	def setup_gpio(self):
 		try:
@@ -71,11 +74,15 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 
 	def check_gpio(self, channel):
 		state = GPIO.input(self.PIN_FILAMENT)
-		self._logger.debug("Detected sensor [%s] state [%s]? !"%(channel, state))
+		#self._logger.debug("Detected sensor [%s] state [%s]? !"%(channel, state))
 		if not state: #safety pin ?
 			self._logger.debug("Sensor [%s]!"%state)
 			if self._printer.is_printing():
 				self._printer.toggle_pause_print()
+				self.we_paused  = True
+
+	def check_filament_pause(self):
+		return self.we_paused
 
 	def get_version(self):
 		return self._plugin_version
@@ -103,5 +110,7 @@ __plugin_description__ = "Use a filament sensor to pause printing when fillament
 
 def __plugin_load__():
 	global __plugin_implementation__
+	global __plugin_helpers__
 	__plugin_implementation__ = FilamentSensorPlugin()
+	__plugin_helpers__ = dict(check_auto_pause=__plugin_implementation__.check_filament_pause)
 
