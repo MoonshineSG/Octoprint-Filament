@@ -24,7 +24,7 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 		if GPIO.VERSION < "0.6":
 			raise Exception("RPi.GPIO must be greater than 0.6")
 			
-		GPIO.setmode(GPIO.BCM)
+		GPIO.setmode(GPIO.BOARD)
 		GPIO.setwarnings(False)
 		self.we_paused = False
 		
