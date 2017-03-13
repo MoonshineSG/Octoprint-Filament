@@ -1,3 +1,5 @@
+Based on Octoprint-Filament by MoonshineSG
+
 Pause print on GPIO filament runout sensor
 
 The following need to be added to the config.yaml:
@@ -5,8 +7,8 @@ The following need to be added to the config.yaml:
 ```
 plugins:
   filament:
-    pin: XX
-    bounce: 400
+    pin: 21
+    bounce: 10000
 ```
 where XX represent the GPIO pin where your sensor is connected.
 
@@ -22,5 +24,3 @@ A build using an optical switch can be found at http://www.thingiverse.com/thing
 
 Note: Needs RPi.GPIO version greater than 0.6.0 to allow access to GPIO for non root and `chmod a+rw /dev/gpiomem`.
 This requires a fairly up to date system.
-
-WARNING: I am **not responsible** for any failed prints. Use at your own risk.
