@@ -95,12 +95,12 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 
 				# version check: github repository
 				type="github_release",
-				user="MoonshineSG",
+				user="Robo",
 				repo="OctoPrint-Filament",
 				current=self._plugin_version,
 
 				# update method: pip
-				pip="https://github.com/MoonshineSG/OctoPrint-Filament/archive/{target_version}.zip"
+				pip="https://github.com/Robo3D/OctoPrint-Filament/archive/{target_version}.zip"
 			)
 		)
 
