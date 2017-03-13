@@ -10,6 +10,8 @@ plugins:
 ```
 where XX represent the GPIO pin where your sensor is connected.
 
+To install: `https://github.com/Robo3D/OctoPrint-Filament/archive/master.zip`
+
 An API is available to check the filament sensor status via a GET method to `/plugin/filament/status` which returns a JSON
 
 - `{status: "-1"}` if the sensor is not setup
