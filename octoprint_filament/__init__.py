@@ -40,8 +40,8 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 		
 	def get_settings_defaults(self):
 		return dict(
-			pin = 21,
-			bounce = 10000
+			pin = -1,
+			bounce = 300
 		)
 
 	@octoprint.plugin.BlueprintPlugin.route("/status", methods=["GET"])
