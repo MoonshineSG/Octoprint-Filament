@@ -15,7 +15,11 @@ plugin_name = "Filament Sensor"
 
 # The plugin's version. Can be overwritten within OctoPrint's internal data via __plugin_version__ in the plugin module
 <<<<<<< HEAD
+<<<<<<< HEAD
 plugin_version = "1.2.2"
+=======
+plugin_version = "1.0.1"
+>>>>>>> parent of 0abe21f... Update setup.py
 =======
 plugin_version = "1.0.1"
 >>>>>>> parent of 0abe21f... Update setup.py
