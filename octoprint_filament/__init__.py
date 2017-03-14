@@ -40,8 +40,8 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 		
 	def get_settings_defaults(self):
 		return dict(
-			pin = 21,
-			bounce = 10000
+			pin = -1,
+			bounce = 300
 		)
 
 	@octoprint.plugin.BlueprintPlugin.route("/status", methods=["GET"])
@@ -95,12 +95,12 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 
 				# version check: github repository
 				type="github_release",
-				user="Robo",
+				user="MoonshineSG",
 				repo="OctoPrint-Filament",
 				current=self._plugin_version,
 
 				# update method: pip
-				pip="https://github.com/Robo3D/OctoPrint-Filament/archive/{target_version}.zip"
+				pip="https://github.com/MoonshineSG/OctoPrint-Filament/archive/{target_version}.zip"
 			)
 		)
 

@@ -1,16 +1,14 @@
-***Pause print on GPIO filament runout sensor***
+Pause print on GPIO filament runout sensor
 
 The following need to be added to the config.yaml:
 
 ```
 plugins:
   filament:
-    pin: 21
-    bounce: 10000
+    pin: XX
+    bounce: 400
 ```
 where XX represent the GPIO pin where your sensor is connected.
-
-To install: `https://github.com/Robo3D/OctoPrint-Filament/archive/master.zip`
 
 An API is available to check the filament sensor status via a GET method to `/plugin/filament/status` which returns a JSON
 
@@ -25,4 +23,4 @@ A build using an optical switch can be found at http://www.thingiverse.com/thing
 Note: Needs RPi.GPIO version greater than 0.6.0 to allow access to GPIO for non root and `chmod a+rw /dev/gpiomem`.
 This requires a fairly up to date system.
 
-Based on Octoprint-Filament by MoonshineSG
+WARNING: I am **not responsible** for any failed prints. Use at your own risk.
