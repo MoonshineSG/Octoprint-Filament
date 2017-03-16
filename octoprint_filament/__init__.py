@@ -36,7 +36,7 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 		
 		if self.PIN_FILAMENT != -1:
 			self._logger.info("Filament Sensor Plugin setup on GPIO [%s]..."%self.PIN_FILAMENT)
-			GPIO.setup(self.PIN_FILAMENT, GPIO.IN)
+			GPIO.setup(self.PIN_FILAMENT, GPIO.IN, GPIO.PUD_UP)
 		
 	def get_settings_defaults(self):
 		return dict(
