@@ -35,8 +35,12 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 		self.BOUNCE = self._settings.get_int(["bounce"])
 		
 		if self.PIN_FILAMENT != -1:
-			self._logger.info("Filament Sensor Plugin setup on GPIO [%s]..."%self.PIN_FILAMENT)
+			self._logger.info("Filament Sensor Plugin setup on GPIO [%s]...###################"%self.PIN_FILAMENT)
 			GPIO.setup(self.PIN_FILAMENT, GPIO.IN)
+			self._logger.info("Starting CALLBACK##################################")
+			GPIO.add_event_detect(self.PIN_FILAMENT, GPIO.FALLING, callback=self.check_gpio, bouncetime=self.BOUNCE) 
+			GPIO.add_event_detect(self.PIN_FILAMENT, GPIO.RISING, callback=self.check_gpio, bouncetime=self.BOUNCE)
+
 		
 	def get_settings_defaults(self):
 		return dict(
@@ -52,17 +56,18 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 		return jsonify( status = status )
 		
 	def on_event(self, event, payload):
-		if event == Events.PRINT_STARTED:
-			self._logger.info("Printing started. Filament sensor enabled.")
-			self.setup_gpio()
-		elif event in (Events.PRINT_DONE, Events.PRINT_FAILED, Events.PRINT_CANCELLED):
-			self._logger.info("Printing stopped. Filament sensor disbaled.")
-			try:
-				GPIO.remove_event_detect(self.PIN_FILAMENT)
-			except:
-				pass
-		elif event == Events.PRINT_RESUMED:
-			self.we_paused = False
+		# if event == Events.PRINT_STARTED:
+		# 	self._logger.info("Printing started. Filament sensor enabled.")
+		# 	self.setup_gpio()
+		# elif event in (Events.PRINT_DONE, Events.PRINT_FAILED, Events.PRINT_CANCELLED):
+		# 	self._logger.info("Printing stopped. Filament sensor disbaled.")
+		# 	try:
+		# 		GPIO.remove_event_detect(self.PIN_FILAMENT)
+		# 	except:
+		# 		pass
+		# elif event == Events.PRINT_RESUMED:
+		# 	self.we_paused = False
+		pass
 
 	def setup_gpio(self):
 		try:
@@ -72,9 +77,10 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 		if self.PIN_FILAMENT != -1:
 			GPIO.add_event_detect(self.PIN_FILAMENT, GPIO.FALLING, callback=self.check_gpio, bouncetime=self.BOUNCE) 
 
+
 	def check_gpio(self, channel):
 		state = GPIO.input(self.PIN_FILAMENT)
-		#self._logger.debug("Detected sensor [%s] state [%s]? !"%(channel, state))
+		self._logger.debug("Detected sensor [%s] state [%s]? !"%(channel, state))
 		if not state: #safety pin ?
 			self._logger.debug("Sensor [%s]!"%state)
 			if self._printer.is_printing():
