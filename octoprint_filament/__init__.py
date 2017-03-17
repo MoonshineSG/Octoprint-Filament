@@ -42,8 +42,7 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
         
         if self.PIN_FILAMENT != -1:
             self._logger.info("Filament Sensor Plugin setup on GPIO [%s]...###################"%self.PIN_FILAMENT)
-            self._logger.info("Starting CALLBACK##################################")
-
+            
             api_key = self._settings.global_get(['api', 'key'])
             self._logger.info(api_key)
             self.pin_monitor = pinMonitor(api_key, self.PIN_FILAMENT)
@@ -59,15 +58,22 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
             bounce = 300
         )
 
+    def start_monitoring(self):
+        api_key = self._settings.global_get(['api', 'key'])
+        if self.pin_monitor != None:
+            self.pin_monitor.stop_monitor()
+            self.pin_monitor = None
+            self.pin_monitor = pinMonitor(api_key, self.PIN_FILAMENT)
+            self.pin_monitor.start_monitor()
+        else:
+            self.pin_monitor = pinMonitor(api_key, self.PIN_FILAMENT)
+            self.pin_monitor.start_monitor()
+
+
         
     def on_event(self, event, payload):
         if event == Events.PRINT_STARTED:
-            if self.pin_monitor != None:
-                self.pin_monitor.start_monitor()
-            else:
-                api_key = self._settings.global_get(['api', 'key'])
-                self.pin_monitor = pinMonitor(api_key, self.PIN_FILAMENT)
-                self.pin_monitor.start_monitor()
+            self.start_monitoring()
 
         elif event in (Events.PRINT_DONE, Events.PRINT_FAILED, Events.PRINT_CANCELLED, Events.PRINT_PAUSED):
             if self.pin_monitor != None:
@@ -75,24 +81,14 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 
         elif event == Events.PRINT_RESUMED:
             self.we_paused = False
-            if self.pin_monitor != None:
-                self.pin_monitor.stop_monitor()
-                self.pin_monitor = None
-                api_key = self._settings.global_get(['api', 'key'])
-                self.pin_monitor = pinMonitor(api_key, self.PIN_FILAMENT)
-                self.pin_monitor.start_monitor()
-            else:
-                api_key = self._settings.global_get(['api', 'key'])
-                self.pin_monitor = pinMonitor(api_key, self.PIN_FILAMENT)
-                self.pin_monitor.start_monitor()
+            self.start_monitoring()
         
     def check_filament_pause(self):
         if self.pin_monitor != None:
-            for x in range(0,10):
-                poll = self.pin_monitor.monitor_pipe()
-                if poll:
-                    return poll
-                    break
+            for x in range (0, 10):
+                data = self.pin_monitor.monitor_pipe()
+                if data:
+                    return data
         else:
             return False
 
