@@ -107,18 +107,18 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 
                 # version check: github repository
                 type="github_release",
-                user="MoonshineSG",
+                user="Robo3D",
                 repo="OctoPrint-Filament",
                 current=self._plugin_version,
 
                 # update method: pip
-                pip="https://github.com/MoonshineSG/OctoPrint-Filament/archive/{target_version}.zip"
+                pip="https://github.com/Robo3D/OctoPrint-Filament/archive/{target_version}.zip"
             )
         )
 
 __plugin_name__ = "Filament Sensor"
-__plugin_version__ = "1.0.1"
-__plugin_description__ = "Use a filament sensor to pause printing when fillament runs out."
+__plugin_version__ = "2.0"
+__plugin_description__ = "Use a filament sensor to pause printing when filament runs out."
 
 def __plugin_load__():
     global __plugin_implementation__
