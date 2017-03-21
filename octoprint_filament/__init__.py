@@ -45,7 +45,7 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
             
             api_key = self._settings.global_get(['api', 'key'])
             self._logger.info(api_key)
-            self.pin_monitor = pinMonitor(api_key, self.PIN_FILAMENT)
+            self.pin_monitor = pinMonitor(api_key, self.PIN_FILAMENT, pin_timer=True)
             
     def on_shutdown(self):
         if self.pin_monitor != None:
@@ -58,22 +58,22 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
             bounce = 300
         )
 
-    def start_monitoring(self):
+    def start_monitoring(self, timer=False, **kwargs):
         api_key = self._settings.global_get(['api', 'key'])
         if self.pin_monitor != None:
             self.pin_monitor.stop_monitor()
             self.pin_monitor = None
-            self.pin_monitor = pinMonitor(api_key, self.PIN_FILAMENT)
+            self.pin_monitor = pinMonitor(api_key, self.PIN_FILAMENT, pin_timer=timer)
             self.pin_monitor.start_monitor()
         else:
-            self.pin_monitor = pinMonitor(api_key, self.PIN_FILAMENT)
+            self.pin_monitor = pinMonitor(api_key, self.PIN_FILAMENT, pin_timer=timer)
             self.pin_monitor.start_monitor()
 
 
         
     def on_event(self, event, payload):
         if event == Events.PRINT_STARTED:
-            self.start_monitoring()
+            self.start_monitoring(timer=True)
 
         elif event in (Events.PRINT_DONE, Events.PRINT_FAILED, Events.PRINT_CANCELLED, Events.PRINT_PAUSED):
             if self.pin_monitor != None:
