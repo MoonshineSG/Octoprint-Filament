@@ -7,6 +7,7 @@ import RPi.GPIO as GPIO
 import logging
 import requests
 import json
+import time
 
 class pinMonitor():
     def __init__(self, printer_api, switch_pin):
@@ -52,11 +53,27 @@ class pinMonitor():
         self.monitor_pin(child_pipe)
 
     def initialize_pin(self):
+        self.logger.info("Process " + str(os.getpid()) +" Starting for Pin Monitor" )
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
         GPIO.setup(self.switch_pin, GPIO.IN, GPIO.PUD_UP)
 
     def monitor_pin(self, child):
+        timer = int(round(time.time()*1000))
+        timer += 300000
+        self.timer_done = False
+        update_time = timer + 1000
+        while not self.timer_done and not self.exit:
+            cur_time = int(round(time.time()*1000))
+            
+            if cur_time >= timer:
+                self.timer_done = True
+            if cur_time >= update_time:
+                update_time = cur_time + 1000
+                self.logger.info(str(cur_time) + " " + str(timer))
+
+        self.logger.info("Five Minute Timer loop Stopped #################")
+        self.logger.info(str(self.timer_done) + " " + str(self.exit))
         
         while not self.paused and not self.exit:
             #check to see if we need to exit 
@@ -78,7 +95,7 @@ class pinMonitor():
                     t = threading.Timer(10.0, self.check_count,args=(self.counter1,))
                     t.start()
 
-        #self.logger.info("While looped Stopped #################")
+        self.logger.info("pin monitor Stopped #################")
         #Stop the print
         if self.paused:
             header = {'Content-Type': 'application/json', 'X-Api-Key': self.api_key}
