@@ -14,14 +14,15 @@ plugin_package = "octoprint_filament"
 plugin_name = "Filament Sensor"
 
 # The plugin's version. Can be overwritten within OctoPrint's internal data via __plugin_version__ in the plugin module
-plugin_version = "2.1"
+
+plugin_version = "2.2"
 
 # The plugin's description. Can be overwritten within OctoPrint's internal data via __plugin_description__ in the plugin
 # module
 plugin_description = """Use a filament sensor to pause printing when filament runs out."""
 
 # The plugin's author. Can be overwritten within OctoPrint's internal data via __plugin_author__ in the plugin module
-plugin_author = "Robo"
+plugin_author = "Matt Pedler"
 
 # The plugin's author's mail address.
 plugin_author_email = "developer@robo3d.com"

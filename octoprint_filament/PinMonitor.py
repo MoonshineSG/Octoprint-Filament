@@ -7,9 +7,10 @@ import RPi.GPIO as GPIO
 import logging
 import requests
 import json
+import time
 
 class pinMonitor():
-    def __init__(self, printer_api, switch_pin):
+    def __init__(self, printer_api, switch_pin, pin_timer=False, **kwargs):
         self.switch_pin = switch_pin
         self.threadID = "pin_monitor"
         self.api_key = printer_api
@@ -22,6 +23,8 @@ class pinMonitor():
         logging.basicConfig(filename='/home/pi/.octoprint/logs/octoprint.log', level=logging.DEBUG)
         self.logger = logging
         self.exit = False
+        self.pin_timer = pin_timer
+        self.timer_done = False
 
     def stop_monitor(self):
         #self.logger.info("Stopping monitor! ########################")
@@ -52,12 +55,30 @@ class pinMonitor():
         self.monitor_pin(child_pipe)
 
     def initialize_pin(self):
+        self.logger.info("Process " + str(os.getpid()) +" Starting for Pin Monitor" )
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
         GPIO.setup(self.switch_pin, GPIO.IN, GPIO.PUD_UP)
 
     def monitor_pin(self, child):
+        if self.pin_timer:
+            self.logger.info("Five Minute Timer loop Started #################")
+            timer = int(round(time.time()*1000))
+            timer += 300000
+            self.timer_done = False
+            update_time = timer + 1000
+            while not self.timer_done and not self.exit:
+                cur_time = int(round(time.time()*1000))
+                
+                if cur_time >= timer:
+                    self.timer_done = True
+                if cur_time >= update_time:
+                    update_time = cur_time + 1000
+                    self.logger.info(str(cur_time) + " " + str(timer))
+    
+            self.logger.info("Five Minute Timer loop Stopped #################")
         
+        self.logger.info("Pin Monitor Started #################")
         while not self.paused and not self.exit:
             #check to see if we need to exit 
             poll = child.poll()
@@ -78,7 +99,7 @@ class pinMonitor():
                     t = threading.Timer(10.0, self.check_count,args=(self.counter1,))
                     t.start()
 
-        #self.logger.info("While looped Stopped #################")
+        self.logger.info("pin monitor Stopped #################")
         #Stop the print
         if self.paused:
             header = {'Content-Type': 'application/json', 'X-Api-Key': self.api_key}
