@@ -25,6 +25,7 @@ class pinMonitor():
         self.exit = False
         self.pin_timer = pin_timer
         self.timer_done = False
+        self.one_minute_timer = True
 
     def stop_monitor(self):
         #self.logger.info("Stopping monitor! ########################")
@@ -44,7 +45,7 @@ class pinMonitor():
         if poll:
             data = self.parent.recv()
             if data:
-                self.logger.info(str(data) + "###########")
+                self.logger.info(str(data) + " Pin Monitor Data ###########")
                 return data
                 
         return False
@@ -90,14 +91,52 @@ class pinMonitor():
                         continue
 
             #check the state of the pin
-            state = GPIO.input(21)
+            self.counter0 = 0
+            self.counter1 = 0
+            
+            state = GPIO.input(self.switch_pin)
             if state ==1:
-                self.counter1 +=1
 
-                if not self.lock_1_timer:
-                    self.lock_1_timer = True
-                    t = threading.Timer(10.0, self.check_count,args=(self.counter1,))
-                    t.start()
+                #set timer
+                timer = int(round( time.time() *1000) )
+                timer += 15000 #15 seconds
+                self.timer_done = False
+                #reset counters
+                self.counter0 = 0
+                self.counter1 = 0
+                stime = time.time()
+                self.logger.info("Timer Loop Started")
+                while int(round( time.time() *1000) ) < timer:
+                    state = GPIO.input(self.switch_pin)
+                    if state == 1:
+                        self.counter1 += 1
+                    elif state == 0:
+                        self.counter0 += 1
+                etime = time.time() - stime
+                self.logger.info("Timer Loop Ended " + str(etime))
+
+                total = self.counter0 + self.counter1
+                self.logger.info("Total: " + str(total) + " 1s: " + str(self.counter1) + " 0s: " + str(self.counter0))
+
+                p1 = 0
+                p0 = 0
+                if self.counter1 >= 1:
+                    p1 = float((float(self.counter1) / float(total)) * 100.00)
+                    p0 = float((float(self.counter0) / float(total)) * 100.00)
+                
+
+                self.logger.info("1 Percentage: " + str(p1))
+                self.logger.info("0 Percentage: " + str(p0))
+
+                #if the 1s are over 80 percent of the total then pause
+                if int(p1) > 80:
+                    self.logger.info("Pausing")
+                    self.paused = True
+                    break
+
+
+
+               
 
         self.logger.info("pin monitor Stopped #################")
         #Stop the print
@@ -113,14 +152,7 @@ class pinMonitor():
             self.logger.info("Process " + str(os.getpid()) +" Exiting" )
             sys.exit()
             
-    def check_count(self, original_count):
-        #self.logger.info("Checking Count " + str(self.counter1 - original_count) + " ###################################")
-        if self.counter1 - original_count > 100000:
-            #self.logger.info("Pausing the Print!")
-            self.paused = True
-            
-        else:
-            self.lock_1_timer = False
+    
         
         
 
