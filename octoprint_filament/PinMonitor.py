@@ -62,7 +62,6 @@ class pinMonitor():
         GPIO.setup(self.switch_pin, GPIO.IN, GPIO.PUD_UP)
 
     def monitor_pin(self, child):
-
         self.logger.info("Pin Monitor Started #################")
         while not self.paused and not self.exit:
             self.exit_switch()
@@ -76,7 +75,9 @@ class pinMonitor():
                 timer_15s = self.timer(15)
                 self.counter0 = 0
                 self.counter1 = 0
-                while next(timer_15s):
+                while next(timer_15s) and not self.exit:
+                    self.exit_switch()
+                    if self.exit: break
                     state = GPIO.input(self.switch_pin)
                     if state == 1:
                         self.counter1 += 1
