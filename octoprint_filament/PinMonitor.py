@@ -27,7 +27,7 @@ class pinMonitor():
         self.timer_done = False
 
     def stop_monitor(self):
-        #self.logger.info("Stopping monitor! ########################")
+        self.logger.info("Stopping monitor! ########################")
         self.parent.send({'exit':True})
         if self.monitor != None:
             for child in multiprocessing.active_children():
@@ -62,6 +62,7 @@ class pinMonitor():
         GPIO.setup(self.switch_pin, GPIO.IN, GPIO.PUD_UP)
 
     def monitor_pin(self, child):
+
         self.logger.info("Pin Monitor Started #################")
         while not self.paused and not self.exit:
             self.exit_switch()
@@ -90,17 +91,16 @@ class pinMonitor():
                     p1 = float((float(self.counter1) / float(total)) * 100.00)
                     p0 = float((float(self.counter0) / float(total)) * 100.00)
 
-                self.logger.info("1 Percentage: " + str(p1))
-                self.logger.info("0 Percentage: " + str(p0))
+                self.logger.info("1 Percentage: " + str("{0:.4f}".format(p1)))
+                self.logger.info("0 Percentage: " + str("{0:.4f}".format(p0)))
 
-                #if the 1s are over 80 percent of the total then pause
-                if int(p1) > 80:
+                #if the 1s are over 95 percent of the total then pause
+                if int(p1) > 95:
                     self.logger.info("Pausing")
                     self.paused = True
                     break
 
         self.logger.info("pin monitor Stopped #################")
-
 
     def start_gcode_failsafe(self):
         """
