@@ -87,6 +87,7 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
         if self.pin_monitor != None:
             for x in range (0, 10):
                 data = self.pin_monitor.monitor_pipe()
+                self._logger.info("Pipe Data: " + str(data))
                 if data:
                     return data
         else:

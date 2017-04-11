@@ -28,7 +28,7 @@ class pinMonitor():
         self.one_minute_timer = True
 
     def stop_monitor(self):
-        #self.logger.info("Stopping monitor! ########################")
+        self.logger.info("Stopping monitor! ########################")
         self.parent.send({'exit':True})
         if self.monitor != None:
             for child in multiprocessing.active_children():
@@ -69,6 +69,7 @@ class pinMonitor():
             self.timer_done = False
             update_time = timer + 1000
             while not self.timer_done and not self.exit:
+                self.poll_child(child)
                 cur_time = int(round(time.time()*1000))
                 
                 if cur_time >= timer:
@@ -81,14 +82,7 @@ class pinMonitor():
         
         self.logger.info("Pin Monitor Started #################")
         while not self.paused and not self.exit:
-            #check to see if we need to exit 
-            poll = child.poll()
-            if poll:
-                data = child.recv()
-                if 'exit' in data:
-                    if data['exit']:
-                        self.exit = True
-                        continue
+            self.poll_child(child)
 
             #check the state of the pin
             self.counter0 = 0
@@ -106,7 +100,8 @@ class pinMonitor():
                 self.counter1 = 0
                 stime = time.time()
                 self.logger.info("Timer Loop Started")
-                while int(round( time.time() *1000) ) < timer:
+                while int(round( time.time() *1000) ) < timer and not self.exit:
+                    self.poll_child(child)
                     state = GPIO.input(self.switch_pin)
                     if state == 1:
                         self.counter1 += 1
@@ -125,19 +120,16 @@ class pinMonitor():
                     p0 = float((float(self.counter0) / float(total)) * 100.00)
                 
 
-                self.logger.info("1 Percentage: " + str(p1))
-                self.logger.info("0 Percentage: " + str(p0))
+                self.logger.info("1 Percentage: " + str("{0:.4f}".format(p1)))
+                self.logger.info("0 Percentage: " + str("{0:.4f}".format(p0)))
 
-                #if the 1s are over 80 percent of the total then pause
-                if int(p1) > 80:
+                #if the 1s are over 95 percent of the total then pause
+                if int(p1) > 95:
                     self.logger.info("Pausing")
                     self.paused = True
                     break
 
-
-
-               
-
+        #Detirmine action after main look break
         self.logger.info("pin monitor Stopped #################")
         #Stop the print
         if self.paused:
@@ -151,6 +143,18 @@ class pinMonitor():
         elif self.exit:
             self.logger.info("Process " + str(os.getpid()) +" Exiting" )
             sys.exit()
+
+    #This function polls the child pipe to see if we need to exit the process
+    def poll_child(self, child):
+        #check to see if we need to exit 
+        poll = child.poll()
+        if poll:
+            data = child.recv()
+            if 'exit' in data:
+                if data['exit']:
+                    self.exit = True
+                        
+
             
     
         
