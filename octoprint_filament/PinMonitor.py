@@ -8,6 +8,7 @@ import logging
 import requests
 import json
 import time
+from datetime import datetime
 
 class pinMonitor():
     def __init__(self, printer_api, switch_pin, pin_timer=False, **kwargs):
@@ -64,7 +65,7 @@ class pinMonitor():
     def monitor_pin(self, child):
         self.logger.info("Pin Monitor Started #################")
         while not self.paused and not self.exit:
-            self.exit_switch()
+            self.exit_switch(child)
             if self.exit: continue
             #check the state of the pin
             self.counter0 = 0
@@ -75,8 +76,8 @@ class pinMonitor():
                 timer_15s = self.timer(15)
                 self.counter0 = 0
                 self.counter1 = 0
-                while next(timer_15s) and not self.exit:
-                    self.exit_switch()
+                while not next(timer_15s) and not self.exit:
+                    self.exit_switch(child)
                     if self.exit: break
                     state = GPIO.input(self.switch_pin)
                     if state == 1:
@@ -110,21 +111,12 @@ class pinMonitor():
         """
         if self.pin_timer:
             self.logger.info("Five Minute Timer loop Started #################")
-            timer = int(round(time.time()*1000))
-            timer += 300000
-            self.timer_done = False
-            update_time = timer + 1000
-            while not self.timer_done and not self.exit:
-                cur_time = int(round(time.time()*1000))
-                if cur_time >= timer:
-                    self.timer_done = True
-                if cur_time >= update_time:
-                    update_time = cur_time + 1000
-                    self.logger.info(str(cur_time) + " " + str(timer))
-
+            timer_5m = self.timer(300)
+            while not next(timer_5m) and not self.exit:
+                continue
             self.logger.info("Five Minute Timer loop Stopped #################")
 
-    def exit_switch(self):
+    def exit_switch(self, child):
         """checks pipe for exit switch"""
         poll = child.poll()
         if poll:
