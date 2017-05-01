@@ -6,10 +6,10 @@ The following needs to be added to the config.yaml in the plugins section:
 plugins:
   filament:
     pin: XX
-	filament: 0
+    filament: 0
     bounce: 400	
-	gcode_runout: "M0"
-	gcode_loaded: ""
+    gcode_runout: "M0"
+    gcode_loaded: ""
 ```
 
 where XX represent the GPIO pin where your sensor is connected. Use `GPIO.BCM` notation. See [this](http://raspberrypi.stackexchange.com/questions/12966/what-is-the-difference-between-board-and-bcm-for-gpio-pin-numbering) good explation of GPIO.BOARD vs GPIO.BCM.
