@@ -27,25 +27,27 @@ WARNING: I am **not responsible** for any failed prints. Use at your own risk.
 
 === How to install ===
 
-For some older Octopi installs, the plugin won't work before you make sure you have everything set up to date. Here are the steps to ensure you have everyting in place for the plugin.
+For some older Octopi installs, the plugin won't work before you make sure you have everything set up to date. Here are the steps to ensure you have everyting in place for the plugin. 
+
  0- you can check your system version with 
-- `uname -a 
+- `uname -a` 
 Version below 0.4.xx are not known to work well. 
 
  1- Upgrade your Octopi system (Raspian Linux tailored to Octoprint) :
  Login via SSH. Default admin user is pi
- - `ssh -l pi  octopi.local  
+ - `ssh -l pi  octopi.local`  
  
  Update the list of package and then upgrade your system. It will upgrade RPi.GPIO and gives you a /dev/gpiomem device. Both are needed Reboot.
-  - `sudo apt-get update
-  - `sudo apt-get upgrade
-  - `reboot
+  - `sudo apt-get update`
+  - `sudo apt-get upgrade`
+  - `reboot` 
+  
   Then you can check your system version again with 
-- `uname -a 
+  - `uname -a` 
 
  2- Edit the Octoprint config file manually 
  
- - `nano ~/.octoprint/config.yaml
+ - `nano ~/.octoprint/config.yaml`
  go down to the plugins section using arrows, and insert the filament settings
  
  inside the
@@ -66,7 +68,7 @@ Save by typing ctrl-X and then Y (for yes)
 
  3- Give access to non-root user to the GPIO device
  
-  - `sudo chmod a+rw /dev/gpiomem
+  - `sudo chmod a+rw /dev/gpiomem`
  
  4- install the plugin using the plugin manager in the Octoprint web interface
 
