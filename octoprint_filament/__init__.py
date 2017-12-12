@@ -64,7 +64,7 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
     def start_monitoring(self, timer=False, **kwargs):
         api_key = self._settings.global_get(['api', 'key'])
         self._logger.info(api_key)
-        self.pin_monitor = pinMonitor(api_key, self.PIN_FILAMENT, pin_timer=timer)
+        self.pin_monitor.update_API_key_and_pin_timer(api_key, timer=timer)
         self.pin_monitor.start_monitor()
         
     def on_event(self, event, payload):

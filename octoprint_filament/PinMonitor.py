@@ -28,6 +28,10 @@ class pinMonitor():
         self.timer_done = False
         self.logger.info("Pin Monitor made with api key: " + str(self.api_key))
 
+    def update_API_key_and_pin_timer(self, new_key, timer=False):
+        self.api_key = new_key
+        self.pin_timer = timer
+
     def stop_monitor(self):
         
         self.parent.send({'exit':True})
@@ -35,9 +39,9 @@ class pinMonitor():
         for child in multiprocessing.active_children():
             if child.is_alive():
                 self.logger.info("Killing child")
-                child.terminate()
-                child.join(15)
+                child.join(5)                
                 self.logger.info("Joined Child with pid: " + str(child.pid))
+                child.terminate()
                 self.logger.info("Child's Exit Code is: " + str(child.exitcode))
             else:
                 self.logger.info("Child with pid: " + str(child.pid) + " is not alive")
@@ -46,8 +50,6 @@ class pinMonitor():
             # self.logger.info("Killed Child at PID: " + str(child.pid))
 
     def start_monitor(self):
-        if self.monitor != None:
-            self.stop_monitor()
         self.parent, self.child = multiprocessing.Pipe()
         self.monitor = multiprocessing.Process(target=self.run_monitor, args=(self.child,), name="Filament_Sensor")
         self.logger.info("Starting monitor! ########################")
