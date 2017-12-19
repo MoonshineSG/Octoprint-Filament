@@ -21,24 +21,43 @@ class pinMonitor():
         self.lock_1_timer = False
         self.parent, self.child = multiprocessing.Pipe()
         self.monitor = None
-        logging.basicConfig(filename='/home/pi/.octoprint/logs/octoprint.log', level=logging.DEBUG)
+        logging.basicConfig(filename='/home/pi/.octoprint/logs/octoprint.log', level=logging.INFO)
         self.logger = logging
         self.exit = False
         self.pin_timer = pin_timer
         self.timer_done = False
+        self.logger.info("Pin Monitor made with api key: " + str(self.api_key))
+
+    def update_API_key_and_pin_timer(self, new_key, timer=False):
+        self.api_key = new_key
+        self.pin_timer = timer
 
     def stop_monitor(self):
-        self.logger.info("Stopping monitor! ########################")
+        
         self.parent.send({'exit':True})
-        if self.monitor != None:
-            for child in multiprocessing.active_children():
-                self.logger.info("Killed Child")
+        self.logger.info("Stopping monitor! ########################")
+        for child in multiprocessing.active_children():
+            if child.is_alive():
+                self.logger.info("Killing child")
+                child.join(5)                
+                self.logger.info("Joined Child with pid: " + str(child.pid))
                 child.terminate()
+                self.logger.info("Child's Exit Code is: " + str(child.exitcode))
+            else:
+                self.logger.info("Child with pid: " + str(child.pid) + " is not alive")
+                self.logger.info("Child's Exit Code is: " + str(child.exitcode))
+            # child.terminate()
+            # self.logger.info("Killed Child at PID: " + str(child.pid))
 
     def start_monitor(self):
-        #self.logger.info("Starting monitor! ########################")
-        self.monitor = multiprocessing.Process(target=self.run_monitor, args=(self.child,))
+        self.parent, self.child = multiprocessing.Pipe()
+        self.monitor = multiprocessing.Process(target=self.run_monitor, args=(self.child,), name="Filament_Sensor")
+        self.logger.info("Starting monitor! ########################")
         self.monitor.start()
+        self.logger.info("Process " + str(self.monitor.pid) +" is assigned to the pin monitor." )
+        self.parent.send({'start':True})
+        self.parent.send({'ack_alive': True})
+        
 
     def monitor_pipe(self):
         poll = self.parent.poll()
@@ -51,13 +70,38 @@ class pinMonitor():
         return False
 
     def run_monitor(self, child_pipe):
+        self.logger.info("Process " + str(os.getpid()) +" Starting for Pin Monitor" )
+
+        self.logger.info("Flushing Monitor")
+        self.accept_flush(child_pipe)
+
+        self.logger.info("Initializing Pin")
         self.initialize_pin()
-        self.start_gcode_failsafe()
+
+        self.logger.info("Running Failsafe")
+        self.start_gcode_failsafe(child_pipe)
+
+        self.logger.info("Starting Monitor")
         self.monitor_pin(child_pipe)
+
+        self.logger.info("Returning Results")
         self.run_results(child_pipe)
+        self.logger.info("Finished monitor loop")
+
+    def accept_flush(self, child_pipe):
+        start_process = False
+        while not start_process:
+            poll = child_pipe.poll()
+            if poll:
+                data = child_pipe.recv()
+                if 'start' in data and data['start'] == True:
+                    start_process = True
+                    break
+
+        return
+
 
     def initialize_pin(self):
-        self.logger.info("Process " + str(os.getpid()) +" Starting for Pin Monitor" )
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
         GPIO.setup(self.switch_pin, GPIO.IN, GPIO.PUD_UP)
@@ -66,7 +110,8 @@ class pinMonitor():
         self.logger.info("Pin Monitor Started #################")
         while not self.paused and not self.exit:
             self.exit_switch(child)
-            if self.exit: continue
+            if self.exit: 
+                continue
             #check the state of the pin
             self.counter0 = 0
             self.counter1 = 0
@@ -78,7 +123,8 @@ class pinMonitor():
                 self.counter1 = 0
                 while not next(timer_15s) and not self.exit:
                     self.exit_switch(child)
-                    if self.exit: break
+                    if self.exit: 
+                        break
                     state = GPIO.input(self.switch_pin)
                     if state == 1:
                         self.counter1 += 1
@@ -104,7 +150,7 @@ class pinMonitor():
 
         self.logger.info("pin monitor Stopped #################")
 
-    def start_gcode_failsafe(self):
+    def start_gcode_failsafe(self, child_pipe):
         """
         Pausing and resuming print at start will execute gcode scripts in wrong order and drive the bed into the nozzle. Filament sensor should not pause print at start...
         Delete this function once a permanent fix has been adopted.
@@ -113,6 +159,7 @@ class pinMonitor():
             self.logger.info("Five Minute Timer loop Started #################")
             timer_5m = self.timer(300)
             while not next(timer_5m) and not self.exit:
+                self.exit_switch(child_pipe)
                 continue
             self.logger.info("Five Minute Timer loop Stopped #################")
 
@@ -121,7 +168,13 @@ class pinMonitor():
         poll = child.poll()
         if poll:
             data = child.recv()
-            self.exit = data.get('exit', False)
+            if 'exit' in data and data['exit']:
+                self.exit = True
+            else:
+                self.exit = False
+
+            if 'ack_alive' in data:
+                self.logger.info("We are alive and kicking!")
 
     def timer(self, interval):
         """
@@ -144,10 +197,12 @@ class pinMonitor():
             header = {'Content-Type': 'application/json', 'X-Api-Key': self.api_key}
             payload = {'command': 'pause','action': 'pause'}
             url = "http://127.0.0.1/api/job"
-
+            self.logger.info("Requesting A pause from octoprint!")
             r = requests.post(url, headers=header, data=json.dumps(payload))
-            #self.logger.info(r.text)
+            self.logger.info(str(r))
             child.send(True)
         elif self.exit:
             self.logger.info("Process " + str(os.getpid()) +" Exiting" )
             sys.exit()
+        else:
+            self.logger.info("Process is exiting, but not due to a pause or exit.")

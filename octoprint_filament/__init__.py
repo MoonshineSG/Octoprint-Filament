@@ -23,6 +23,7 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
         super(FilamentSensorPlugin, self).__init__()
         self.pin_monitor = None
 
+
     def initialize(self):
         self._logger.setLevel(logging.DEBUG)
         
@@ -37,6 +38,7 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
         self._logger.info("Filament Sensor Plugin [%s] initialized..."%self._identifier)
 
     def on_after_startup(self):
+        self._logger.info("Events.PRINT_STARTED == " + str(Events.PRINT_STARTED))
         self.PIN_FILAMENT = self._settings.get(["pin"])
         self.BOUNCE = self._settings.get_int(["bounce"])
         
@@ -46,9 +48,10 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
             api_key = self._settings.global_get(['api', 'key'])
             self._logger.info(api_key)
             self.pin_monitor = pinMonitor(api_key, self.PIN_FILAMENT, pin_timer=True)
+       
             
     def on_shutdown(self):
-        if self.pin_monitor != None:
+        if hasattr(self, 'pin_monitor') and self.pin_monitor != None:
             self.pin_monitor.stop_monitor() 
 
         
@@ -60,19 +63,14 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 
     def start_monitoring(self, timer=False, **kwargs):
         api_key = self._settings.global_get(['api', 'key'])
-        if self.pin_monitor != None:
-            self.pin_monitor.stop_monitor()
-            self.pin_monitor = None
-            self.pin_monitor = pinMonitor(api_key, self.PIN_FILAMENT, pin_timer=timer)
-            self.pin_monitor.start_monitor()
-        else:
-            self.pin_monitor = pinMonitor(api_key, self.PIN_FILAMENT, pin_timer=timer)
-            self.pin_monitor.start_monitor()
-
-
+        self._logger.info(api_key)
+        self.pin_monitor.update_API_key_and_pin_timer(api_key, timer=timer)
+        self.pin_monitor.start_monitor()
         
     def on_event(self, event, payload):
-        if event == Events.PRINT_STARTED:
+        # self._logger.info(event)
+        # self._logger.info(payload)
+        if event == "PrinterStateChanged" and 'state_string' in payload and payload['state_string'] == 'Printing':
             self.start_monitoring(timer=True)
 
         elif event in (Events.PRINT_DONE, Events.PRINT_FAILED, Events.PRINT_CANCELLED, Events.PRINT_PAUSED):
@@ -84,7 +82,7 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
             self.start_monitoring()
         
     def check_filament_pause(self):
-        if self.pin_monitor != None:
+        if hasattr(self, 'pin_monitor') and self.pin_monitor != None:
             for x in range (0, 10):
                 data = self.pin_monitor.monitor_pipe()
                 #self._logger.info("Pipe Data: " + str(data))
