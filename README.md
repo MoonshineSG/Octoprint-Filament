@@ -93,3 +93,8 @@ Install and then follow the instructions to restart Octoprint.
 - `{status: "0"}` if the sensor is OFF (filament not present)
 - `{status: "1"}` if the sensor is ON (filament present)
 
+
+
+### Donate
+
+Accepting [beer tips](https://paypal.me/ovidiuhossu)...
