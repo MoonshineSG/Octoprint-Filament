@@ -24,3 +24,11 @@ Note: Needs RPi.GPIO version greater than 0.6.0 to allow access to GPIO for non 
 This requires a fairly up to date system.
 
 WARNING: I am **not responsible** for any failed prints. Use at your own risk.
+
+# ChangeLog
+
+### 2.6
+- Filament sensor no longer uses multiple processes. Only one process active the entire time.
+- Communication improved between parent and child process
+- Child process will die when parent process is no longer alive
+- Filament sensor will respond to error events now
