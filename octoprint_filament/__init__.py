@@ -38,7 +38,6 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
         self._logger.info("Filament Sensor Plugin [%s] initialized..."%self._identifier)
 
     def on_after_startup(self):
-        self._logger.info("Events.PRINT_STARTED == " + str(Events.PRINT_STARTED))
         self.PIN_FILAMENT = self._settings.get(["pin"])
         self.BOUNCE = self._settings.get_int(["bounce"])
         
@@ -47,13 +46,7 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
             
             api_key = self._settings.global_get(['api', 'key'])
             self._logger.info(api_key)
-            self.pin_monitor = pinMonitor(api_key, self.PIN_FILAMENT, pin_timer=True)
-       
-            
-    def on_shutdown(self):
-        if hasattr(self, 'pin_monitor') and self.pin_monitor != None:
-            self.pin_monitor.stop_monitor() 
-
+            self.pin_monitor = pinMonitor(api_key, self.PIN_FILAMENT)
         
     def get_settings_defaults(self):
         return dict(
@@ -63,23 +56,48 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
 
     def start_monitoring(self, timer=False, **kwargs):
         api_key = self._settings.global_get(['api', 'key'])
-        self._logger.info(api_key)
-        self.pin_monitor.update_API_key_and_pin_timer(api_key, timer=timer)
-        self.pin_monitor.start_monitor()
+        
         
     def on_event(self, event, payload):
-        # self._logger.info(event)
-        # self._logger.info(payload)
-        if event == "PrinterStateChanged" and 'state_string' in payload and payload['state_string'] == 'Printing':
-            self.start_monitoring(timer=True)
+        if event == Events.PRINT_STARTED:
+            self.send_monitor_info('RESET_PAUSE_FLAG')
+            self.send_monitor_info('TIMER_SET')
+            self.send_monitor_info('MONITOR_ON', ack_command=True)
+            self._logger.info("Print Started")
 
-        elif event in (Events.PRINT_DONE, Events.PRINT_FAILED, Events.PRINT_CANCELLED, Events.PRINT_PAUSED):
-            if self.pin_monitor != None:
-                self.pin_monitor.stop_monitor()
+        elif event in [Events.PRINT_DONE, Events.PRINT_FAILED, Events.PRINT_CANCELLED, Events.ERROR, Events.DISCONNECTED]:
+            self._logger.info("Print Stopped")
+            self.send_monitor_info('RESET_PAUSE_FLAG')
+            self.send_monitor_info('MONITOR_OFF', ack_command=True)
+
+        elif event == Events.PRINT_PAUSED:
+            self.send_monitor_info('MONITOR_PAUSE')
 
         elif event == Events.PRINT_RESUMED:
             self.we_paused = False
-            self.start_monitoring()
+            self.send_monitor_info('RESET_PAUSE_FLAG')
+            self.send_monitor_info('TIMER_OFF')
+            self.send_monitor_info('MONITOR_ON')
+            self._logger.info("Print Resumed!")
+
+    #filament options
+    '''
+    MONITOR_ON - resume monitoring 
+    MONITOR_PAUSE - pause monitoring
+    MONITOR_OFF - stop monitoring and go into hibernation
+    TIMER_SET - set timer to true
+    TIMER_OFF - force timer to false
+    RESET_PAUSE_FLAG - reset the pause flag
+    '''
+    def send_monitor_info(self, command, ack_command = False):
+        if self.pin_monitor != None:
+            available_commands = ['MONITOR_ON', 'MONITOR_PAUSE', 'MONITOR_OFF', 'TIMER_SET', 'TIMER_OFF', 'RESET_PAUSE_FLAG']
+            if command in available_commands:
+                command_package = {
+                    'action': command,
+                    'ack_command': ack_command
+                }
+                self.pin_monitor.parent_pipe.send(command_package)
         
     def check_filament_pause(self):
         if hasattr(self, 'pin_monitor') and self.pin_monitor != None:
