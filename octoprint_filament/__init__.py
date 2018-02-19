@@ -60,24 +60,24 @@ class FilamentSensorPlugin(octoprint.plugin.StartupPlugin,
         
     def on_event(self, event, payload):
         if event == Events.PRINT_STARTED:
-            self.send_monitor_info('RESET_PAUSE_FLAG')
-            self.send_monitor_info('TIMER_SET')
+            self.send_monitor_info('RESET_PAUSE_FLAG', ack_command=True)
+            self.send_monitor_info('TIMER_SET', ack_command=True)
             self.send_monitor_info('MONITOR_ON', ack_command=True)
             self._logger.info("Print Started")
 
         elif event in [Events.PRINT_DONE, Events.PRINT_FAILED, Events.PRINT_CANCELLED, Events.ERROR, Events.DISCONNECTED]:
             self._logger.info("Print Stopped")
-            self.send_monitor_info('RESET_PAUSE_FLAG')
+            self.send_monitor_info('RESET_PAUSE_FLAG', ack_command=True)
             self.send_monitor_info('MONITOR_OFF', ack_command=True)
 
         elif event == Events.PRINT_PAUSED:
-            self.send_monitor_info('MONITOR_PAUSE')
+            self.send_monitor_info('MONITOR_PAUSE', ack_command=True)
 
         elif event == Events.PRINT_RESUMED:
             self.we_paused = False
-            self.send_monitor_info('RESET_PAUSE_FLAG')
-            self.send_monitor_info('TIMER_OFF')
-            self.send_monitor_info('MONITOR_ON')
+            self.send_monitor_info('RESET_PAUSE_FLAG', ack_command=True)
+            self.send_monitor_info('TIMER_OFF', ack_command=True)
+            self.send_monitor_info('MONITOR_ON', ack_command=True)
             self._logger.info("Print Resumed!")
 
     #filament options

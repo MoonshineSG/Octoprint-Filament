@@ -60,8 +60,8 @@ class pinMonitor():
         data = None
         if self.child_pipe.poll():
             data = self.child_pipe.recv()
-        if data != None:
-            self.logger.info(str(data))
+        # if data != None:
+        #     self.logger.info(str(data))
         return data
 
 
@@ -94,7 +94,7 @@ class pinMonitor():
                 if action != None and 'action' in action and action['action'] in available_actions:
 
                     #should we log the action?
-                    if 'ack_command' in action:
+                    if 'ack_command' in action and action['ack_command']:
                         available_actions[action['action']](verbose=True)        
                     else:
                         available_actions[action['action']]()
@@ -156,7 +156,7 @@ class pinMonitor():
     def timer_set(self, verbose=False):
         if verbose:
             self.logger.info("Setting 5 minute timer!")
-        self.end_time = time.time() + 20
+        self.end_time = time.time() + 300
         self.timer = True
 
     def timer_done(self):
