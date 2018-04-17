@@ -1,3 +1,5 @@
+### see the improved version at https://github.com/kontakt/Octoprint-Filament-Reloaded
+
 Pause print on GPIO filament runout sensor
 
 The following need to be added to the config.yaml:
